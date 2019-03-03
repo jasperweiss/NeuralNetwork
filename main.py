@@ -2,6 +2,7 @@ import numpy as np
 import pickle
 import csv
 from PIL import Image
+import matplotlib.pyplot as plt
 
 def save():
     with open('network_state.pkl', 'wb') as output:
@@ -95,6 +96,7 @@ def evaluate():
         data = csv.reader(csvfile)
         tested = 0
         correct = 0
+        score = 0
         for record in data:
             inputs = np.array([])
             targetData = (float(record[0]))
@@ -116,9 +118,8 @@ def evaluate():
             if (guess == targetData):
                 correct  = correct + 1
                 score = (correct/tested*100)
-
-            if (tested%500==0):
-                print('score: '+str(correct)+'/'+str(tested)+' correct'+' ('+str(score)+'%)')
+                
+        return(score)
         print("done")
     
 def guess():
@@ -148,4 +149,27 @@ def guess():
     certainty =  str(round(max(predictionsCertainty)*100, 2))+'%'
     guess = np.argmax(predictions)
     print("that's a "+str(guess)+' ('+certainty+' sure)')
-    
+
+def testProgress(rounds):
+    randomWeights(300)
+    scores = np.array([])
+    round = np.array([])
+    print("starting 0 measurement..")
+    score = evaluate()
+    scores = np.append(scores, score)
+    print("score: "+str(score))
+    round = np.append(round, 0)
+    for i in range(1, rounds+1):
+        print("starting measurement "+str(i))
+        train(1)
+        print("evaluating accuracy for round "+str(i))
+        score = evaluate()
+        scores = np.append(scores, score)
+        round = np.append(round, i)
+        print("score: "+str(score))
+
+    plt.plot(round, scores)
+    plt.show()
+        
+        
+        
