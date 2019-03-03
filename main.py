@@ -3,6 +3,7 @@ import pickle
 import csv
 from PIL import Image
 import matplotlib.pyplot as plt
+import time
 
 def save():
     with open('network_state.pkl', 'wb') as output:
@@ -30,6 +31,7 @@ def sigmoidPrime(x):
 inputNeurons = 784
 outputNeurons = 10
 learningRate = 0.001
+verbose = False
 
 
 def randomWeights(hiddenNeurons):
@@ -59,14 +61,15 @@ def backpropagate(inputData, targetData):
     hiddenWeights = hiddenWeights + learningRate * np.dot(hiddenErrors * sigmoidPrime(hiddenOutput), inputData.T)
 
 def train(rounds):
+    start = time.time()
     for y in range(0,rounds):    
         with open('mnist_train.csv',newline='') as csvfile:
             data = csv.reader(csvfile)
             x = 0
             for record in data:
-                if (x%200==0): #progress updates, but not too many :)
-                    progress = round((x*y/60000*100),2)
-                    progressTotal = round((x/(rounds*60000)*100),2)
+                if (x%200==0) and (verbose == True): #progress updates, but not too many :)
+                    progress = round((x/60000)*100,2)
+                    progressTotal = round(((y*60000+x)/(rounds*60000)*100),2)
                     print("progress: "+str(progress)+"%, round("+str(y+1)+"/"+str(rounds)+") ("+str(progressTotal)+"% total)")
                 
                 inputs = np.array([])
@@ -89,9 +92,12 @@ def train(rounds):
                 backpropagate(inputs, targetData)
                 x = x + 1
             csvfile.close()
-    print("done training")
+    end = time.time()
+    minutes = round( ((end - start)/60) , 2)
+    print("done training ("+str(minutes)+" minutes)")
 
 def evaluate():
+    start = time.time()
     with open('mnist_test.csv',newline='') as csvfile:
         data = csv.reader(csvfile)
         tested = 0
@@ -119,8 +125,11 @@ def evaluate():
                 correct  = correct + 1
                 score = (correct/tested*100)
                 
+    
+        end = time.time()
+        minutes = round( ((end - start)/60) , 2)
+        print("done ("+str(minutes)+" minutes)")
         return(score)
-        print("done")
     
 def guess():
     load()
@@ -150,26 +159,80 @@ def guess():
     guess = np.argmax(predictions)
     print("that's a "+str(guess)+' ('+certainty+' sure)')
 
-def testProgress(rounds):
-    randomWeights(300)
+def testProgress(hiddenNeurons,trainingRange):
+    
+    randomWeights(hiddenNeurons)
     scores = np.array([])
-    round = np.array([])
+    x = np.array([])
+    print("training network with "+str(hiddenNeurons)+" hidden neurons, "+str(trainingRange)+" rounds")
     print("starting 0 measurement..")
     score = evaluate()
     scores = np.append(scores, score)
     print("score: "+str(score))
-    round = np.append(round, 0)
-    for i in range(1, rounds+1):
-        print("starting measurement "+str(i))
+    x = np.append(x, 0)
+    start = time.time()
+    for i in range(1, trainingRange+1):
+        print("training configuration with "+str(hiddenNeurons)+" hidden neurons, round "+str(i)+"/"+str(trainingRange))
         train(1)
-        print("evaluating accuracy for round "+str(i))
+        print("evaluating accuracy for round "+str(i)+"/"+str(trainingRange))
         score = evaluate()
         scores = np.append(scores, score)
-        round = np.append(round, i)
+        x = np.append(x, i)
         print("score: "+str(score))
+    results = (x, scores)
+    end = time.time()
+    minutes = round( ((end - start)/60) , 2)
+    duration = minutes/trainingRange
+    return(results,duration)
 
-    plt.plot(round, scores)
+def analyze(configurations):
+    trainingRange = 10
+    print("testing configurations ")
+    for configuration in configurations:
+        start = time.time()
+        results,duration = testProgress(configuration,trainingRange)
+        data = (results,duration)
+
+        filename = 'results_'+str(configuration)+'.pkl'
+        
+        with open(filename, 'wb') as output:
+            pickle.dump(data, output)
+            output.close()
+        end = time.time()
+        minutes = round( ((end - start)/60) , 2)
+        print('training results for network with '+str(configuration)+' hidden neuron(s) saved. ('+str(minutes)+' minutes total, '+str(duration)+' on average)')
+
+def show(configurations):
+    durations = np.array([])
+    for configuration in configurations:
+        filename = 'results_'+str(configuration)+'.pkl'
+        with open(filename,'rb') as output:
+            data = pickle.load(output)
+            results = data[0]
+            duration = data[1]
+            durations = np.append(durations, duration)
+            print('configuration: '+str(configuration)+" (average training+testing time: "+str(duration)+" minutes)")
+            print(results)
+
+        plt.plot(results[0],results[1])
+        plt.xlabel('Training rounds --->')
+        plt.ylabel('Accurcacy score (%) --->')
+        plt.title('Training progression | '+str(configuration)+' hidden neurons')
+        plt.show()
+
+    plt.plot(configurations,durations)
+    plt.xlabel('Hidden neurons --->')
+    plt.ylabel('Duration per training in minutes --->')
+    plt.title('Training duration')
     plt.show()
+
+        
+    
+            
+        
+    
+    
+
         
         
         
