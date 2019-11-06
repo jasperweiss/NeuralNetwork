@@ -127,11 +127,9 @@ def evaluate():
             predictions = predict(inputs)
             predictionsCertainty = np.array([])
             for x in predictions:
-                value = x[0]
                 predictionsCertainty = np.append(predictionsCertainty, x)
             guess = np.argmax(predictions)
             tested = tested + 1
-            certainty = str((max(predictionsCertainty)*100))+"%"
             if (guess == targetData):
                 correct = correct + 1
                 score = (correct/tested*100)
@@ -151,10 +149,6 @@ def guess():
         for x in range(0, 28):
             plain = np.append(plain, image[y, x, 0])
 
-    image_new = np.array(np.split(plain, 28))
-
-    bitmap = Image.fromarray(image_new)
-
     inputs = np.array([])
     for c in plain:
         corrected = c/255
@@ -164,7 +158,6 @@ def guess():
     predictions = predict(inputs)
     predictionsCertainty = np.array([])
     for x in predictions:
-        value = x[0]
         predictionsCertainty = (np.append(predictionsCertainty, x))
     certainty = str(round(max(predictionsCertainty)*100, 2))+'%'
     guess = np.argmax(predictions)
@@ -214,8 +207,9 @@ def analyze(configurations):
             output.close()
         end = time.time()
         minutes = round(((end - start)/60), 2)
-        print('training results for network with '+str(configuration) +
-              ' hidden neuron(s) saved. ('+str(minutes)+' minutes total, '+str(duration)+' on average)')
+        print('training results for network with ' + str(configuration)
+              + ' hidden neuron(s) saved. (' + str(minutes)
+              + ' minutes total, ' + str(duration) + ' on average)')
 
 
 def show(configurations):
@@ -228,7 +222,8 @@ def show(configurations):
             duration = data[1]
             durations = np.append(durations, duration)
             print('configuration: '+str(configuration) +
-                  " (average training+testing time: "+str(duration)+" minutes)")
+                  " (average training+testing time: " + str(duration)
+                  + " minutes)")
             print(results)
 
         plt.plot(results[0], results[1])
